@@ -1,6 +1,7 @@
 import type { Register } from 'claude-code'
 
 import { registerCost } from './cost'
+import { registerEffort } from './effort'
 import { registerGuards } from './guards'
 import { registerLabels } from './labels'
 import { mentorTool, registerMentor } from './mentor'
@@ -15,6 +16,7 @@ export const register: Register = (on, options) => {
   })
 
   registerTeam(on, options)
+  registerEffort(on, options)
   registerLabels(on, options)
   registerTasks(on, options)
   registerGuards(on, options)

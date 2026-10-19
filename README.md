@@ -48,7 +48,7 @@ A plugin cannot force the main model, so set it once yourself, either in a sessi
 
 Noctia then delegates by itself: bulk reading to `reader` (Haiku), hard problems to `architect` (Opus), everything else stays on Sonnet.
 
-To change the models of the lead and of the agents, see [Models](#models).
+To change the models and the effort of the lead and of the agents, see [Models](#models) and [Effort](#effort).
 
 ## What does what
 
@@ -63,6 +63,8 @@ To change the models of the lead and of the agents, see [Models](#models).
 | `hooks/scripts/set-git-mode.sh` | Stores the git mode. Called by `/noctia:git`. |
 | `hooks/scripts/set-team-mode.sh` | Turns agent teams on or off. Called by `/noctia:agent-teams`. |
 | `hooks/scripts/set-models.sh` | Stores the model choices. Called by `/noctia:models`. |
+| `hooks/scripts/set-effort.sh` | Stores the effort levels. Called by `/noctia:effort`. |
+| `hooks/scripts/lib-choices.sh` | Shared logic of `set-models.sh` and `set-effort.sh`. |
 | `hooks/scripts/lib-settings.sh` | Shared helpers that edit `.claude/settings.local.json`. |
 | `skills/code-quality` | How to write and test code. |
 | `skills/security-check` | Security checklist and review. |
@@ -72,6 +74,7 @@ To change the models of the lead and of the agents, see [Models](#models).
 | `skills/git` | The user-only command that unlocks git (`/noctia:git`). |
 | `skills/agent-teams` | The user-only command that turns agent teams on or off (`/noctia:agent-teams`). |
 | `skills/models` | The user-only command that chooses the model of the lead and of each agent (`/noctia:models`). |
+| `skills/effort` | The user-only command that chooses how hard the lead and each agent think (`/noctia:effort`). |
 | `skills/help-me-build-it` | Mentor mode (`/noctia:help-me-build-it`): Claude guides you instead of coding, you write the code. |
 | `agents/architect.md` | Opus: complex code, blocked decisions. |
 | `agents/reader.md` | Haiku: bulk reading (codebase, git history, data). |
@@ -97,6 +100,7 @@ To change the models of the lead and of the agents, see [Models](#models).
 | Mentor panel | In mentor mode, a side panel with the steps (done, doing, to do) and a gauge of the hints used. | v0.3.6 |
 | Cost and context | The status line shows the model, how full the context is and the session cost. A toast warns at 80% of the context. | v0.3.7 |
 | Model choices | Every subagent and teammate starts on the model picked with `/noctia:models`. Needs Claude Code 2.1.287 or later. | v0.5.0 |
+| Effort choices | Every request of a subagent runs at the effort picked with `/noctia:effort`. Needs Claude Code 2.1.287 or later. | v0.6.0 |
 
 ## Agent teams
 
@@ -130,6 +134,32 @@ Without `noctia-mods` the agent choices are an instruction Claude follows, not a
 
 Lead plus a cheaper teammate, as in Devin Fusion: `/noctia:agent-teams on`, then `/noctia:models lead=opus developer=haiku tester=haiku`.
 
+## Effort
+
+`/noctia:effort` chooses how hard the lead and each agent think (the effort level of Claude Code).
+
+```
+/noctia:effort                            show the levels
+/noctia:effort lead=high architect=high reader=low
+/noctia:effort reader=default             use the agent's own level again
+/noctia:effort reset                      drop every choice
+```
+
+Roles are the same as for models. Levels: `low`, `medium`, `high`, `xhigh`, `max`, `default`. The lead cannot take `max`.
+
+Defaults, written in each agent's file: `reader` low, `developer` and `tester` medium, `architect` and `security-reviewer` high.
+
+| What | Where it is stored | How it takes effect |
+|---|---|---|
+| Agents | `.noctia/effort` (git-ignored) | The session-start hook tells Claude to pass `effort` on every Agent call. With `noctia-mods` on Claude Code 2.1.287 or later, every request of a subagent is also run at that level. |
+| `lead` | `effortLevel` in `.claude/settings.local.json` | Next session. Use `/effort <level>` for the current one. |
+
+What it cannot do:
+- A level the model does not support runs as the highest one below it.
+- The `CLAUDE_CODE_EFFORT_LEVEL` variable, `maxEffortLevel` and organization caps beat these choices.
+- Thinking on or off is not a per-agent setting: a subagent follows the session.
+- A teammate gets the effort of its agent file. The mod does not force a choice on it, because it cannot tell which agent a teammate was built from.
+
 ## Mentor mode
 
 `/noctia:help-me-build-it <project, feature or bug>` turns Claude into a mentor. It does not write the solution: it asks questions, helps you split the work into small steps, reviews what you wrote, and guides your debugging with hints of growing strength. It only gives very specific commands, signatures or syntax reminders. You do the thinking and the typing.
@@ -161,7 +191,7 @@ Both then appear as co-authors on the commit on GitHub. If you say no, no credit
 - `gh` commands (for example `gh pr create`) are not covered by the git guard.
 - The co-author trailer is applied by the `git-workflow` skill, so it depends on Claude following it.
 - Hook scripts need `bash`. On Windows, use Git Bash or WSL.
-- `/noctia:agent-teams` and `/noctia:models lead=...` need `jq` to change a `.claude/settings.local.json` that already exists. Without it they leave the file alone and print the line to add by hand. Creating the file needs nothing.
+- `/noctia:agent-teams`, `/noctia:models lead=...` and `/noctia:effort lead=...` need `jq` to change a `.claude/settings.local.json` that already exists. Without it they leave the file alone and print the line to add by hand. Creating the file needs nothing.
 - In bypass-permissions mode, hooks cannot prompt: in `ask` mode Noctia denies instead.
 
 ## License

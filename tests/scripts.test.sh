@@ -6,6 +6,7 @@ set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEAM="$ROOT/hooks/scripts/set-team-mode.sh"
 MODELS="$ROOT/hooks/scripts/set-models.sh"
+EFFORT="$ROOT/hooks/scripts/set-effort.sh"
 WORK="$(mktemp -d)"
 FAILED=0
 trap 'rm -rf "$WORK"' EXIT
@@ -151,6 +152,62 @@ test_session_start_gives_the_choices_to_claude() {
 test_session_start_is_silent_without_choices() {
   new_project
   ! bash "$ROOT/hooks/scripts/session-start.sh" | grep -q '(from /noctia:models)'
+}
+
+test_effort_defaults_to_the_agent_files() {
+  new_project
+  bash "$EFFORT" show | grep -q 'architect .*high .*(default)' \
+    && bash "$EFFORT" show | grep -q 'reader .*low .*(default)'
+}
+
+test_effort_stores_an_agent_choice() {
+  new_project
+  bash "$EFFORT" architect=xhigh >/dev/null
+  contains "$CLAUDE_PROJECT_DIR/.noctia/effort" 'architect=xhigh' \
+    && bash "$EFFORT" show | grep -q 'architect .*xhigh .*(your choice)' \
+    && [ ! -e "$CLAUDE_PROJECT_DIR/.noctia/models" ]
+}
+
+test_effort_lead_goes_to_effortLevel() {
+  new_project
+  bash "$EFFORT" lead=high >/dev/null
+  contains "$CLAUDE_PROJECT_DIR/.claude/settings.local.json" '"effortLevel":"high"'
+}
+
+test_effort_lead_cannot_take_max_but_an_agent_can() {
+  new_project
+  fails bash "$EFFORT" lead=max && bash "$EFFORT" architect=max >/dev/null
+}
+
+test_effort_rejects_unknown_level() {
+  new_project
+  fails bash "$EFFORT" reader=extreme && fails bash "$EFFORT" bogus=low
+}
+
+test_effort_reset_drops_everything() {
+  new_project
+  bash "$EFFORT" reader=high lead=low >/dev/null && bash "$EFFORT" reset >/dev/null
+  ! grep -q 'reader=' "$CLAUDE_PROJECT_DIR/.noctia/effort" 2>/dev/null \
+    && ! contains "$CLAUDE_PROJECT_DIR/.claude/settings.local.json" '"effortLevel"'
+}
+
+test_models_and_effort_do_not_mix() {
+  new_project
+  bash "$MODELS" lead=opus >/dev/null && bash "$EFFORT" lead=low >/dev/null && bash "$EFFORT" reset >/dev/null
+  contains "$CLAUDE_PROJECT_DIR/.claude/settings.local.json" '"model"'
+}
+
+test_session_start_gives_the_effort_to_claude() {
+  new_project
+  bash "$EFFORT" reader=high >/dev/null
+  bash "$ROOT/hooks/scripts/session-start.sh" | grep -q 'reader -> high'
+}
+
+test_every_agent_file_sets_a_model_and_an_effort() {
+  local file
+  for file in "$ROOT"/agents/*.md; do
+    grep -q '^model: ' "$file" && grep -q '^effort: ' "$file" || return 1
+  done
 }
 
 main() {

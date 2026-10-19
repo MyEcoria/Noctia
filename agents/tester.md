@@ -2,6 +2,7 @@
 name: tester
 description: Use to write and run tests for code that was just written, and report failures. Used by /noctia:build.
 model: sonnet
+effort: medium
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 

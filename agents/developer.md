@@ -2,6 +2,7 @@
 name: developer
 description: Use to implement one well-defined task of a project: write the code for it, following the project style. Used by /noctia:build.
 model: sonnet
+effort: medium
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 

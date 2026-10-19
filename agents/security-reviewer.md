@@ -2,6 +2,7 @@
 name: security-reviewer
 description: Use to review a code change or a set of files for security problems: secrets, injection, XSS, unsafe input handling, weak auth, excessive permissions, vulnerable dependencies.
 model: opus
+effort: high
 tools: Read, Grep, Glob, Bash
 ---
 

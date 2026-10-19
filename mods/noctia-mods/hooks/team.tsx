@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { AgentRun } from '../types'
-import { MODELS_FILE, modelFor, parseModels } from './models'
+import { MODELS_FILE, choiceFor, parseChoices } from './choices'
 
 const PANE = 'noctia-team'
 const agents = atom({ plugin: 'noctia-mods', key: 'agents' } as const, [] as AgentRun[])
@@ -84,7 +84,7 @@ export const registerTeam: Register = on => {
     try {
       const path = `${await $.session.root()}/${MODELS_FILE}`
       const text = (await $.fs.exists(path)) ? ((await $.fs.read(path)) as string) : ''
-      model = modelFor(e.subagentType, parseModels(text))
+      model = choiceFor(e.subagentType, parseChoices(text))
     } catch {
       model = undefined
     }

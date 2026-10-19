@@ -2,6 +2,7 @@
 name: reader
 description: Use for reading large amounts of material and returning a compact summary: codebase sweeps, git history, logs, large data files, many-file searches. Cheap and fast, read-only.
 model: haiku
+effort: low
 tools: Read, Grep, Glob, Bash
 ---
 
